@@ -11,17 +11,19 @@ type PriceDesc struct {
 }
 
 type DrugDesc struct {
-	Id          int
-	Name        string
-	Description string
-	Prices      []PriceDesc
-	Components  []string
-	Indications []string
+	Id           int
+	Name         string
+	Description  string
+	NeedsReceipt bool
+	Prices       []PriceDesc
+	Components   []string
+	Indications  []string
 }
 
-func GetDrugs(name string, needsReceipt bool, minAgeStr string, components []string, indications []string) (map[string]DrugDesc, error) {
+func GetDrugs(name string, needsReceiptFilter bool, minAgeStr string, components []string, indications []string) (map[string]DrugDesc, error) {
 	var drugName, drugDescription, componentName, indicationName, medstoreName string
 	var drugId, price int
+	var needsReceipt bool
 	var filterComponents string
 	var filterIndications string
 	if len(components) > 0 {
@@ -37,6 +39,7 @@ func GetDrugs(name string, needsReceipt bool, minAgeStr string, components []str
 			d.Id AS DrugId,
 			d.Name AS DrugName,
 			d.Description AS DrugDescription,
+			d.NeedsReceipt,
 			c.Name as ComponentName,
 			i.Name as IndicationName,
 			ms.Name AS MedstoreName,
@@ -55,7 +58,12 @@ func GetDrugs(name string, needsReceipt bool, minAgeStr string, components []str
 			DrugIndications di on di.DrugId = d.Id
 		JOIN
 			Indications i on i.Id = di.IndicationId
-		WHERE position(LOWER($1) in LOWER(d.Name)) > 0 AND d.NeedsReceipt = ($2) AND d.MinAge >= ($3) 
+		WHERE
+		position(LOWER($1) in LOWER(d.Name)) > 0
+		AND ($2 = FALSE OR d.NeedsReceipt = ($2))
+		AND d.MinAge >= ($3)
+		AND (COALESCE($4, '') = '' OR c.Name = ANY(string_to_array($4, ',')))
+		AND (COALESCE($5, '') = '' OR i.Name = ANY(string_to_array($5, ',')))
 		ORDER BY
     		d.id
 	`
@@ -67,14 +75,14 @@ func GetDrugs(name string, needsReceipt bool, minAgeStr string, components []str
 		}
 		minAge = minAgeParsed
 	}
-	rows, err := db.DB.Query(query, name, needsReceipt, minAge)
+	rows, err := db.DB.Query(query, name, needsReceiptFilter, minAge, filterComponents, filterIndications)
 	if err != nil {
 		return nil, err
 	}
 	drugs := make(map[string]DrugDesc)
 	// rows.Scan(drugs)
 	for rows.Next() {
-		if err := rows.Scan(&drugId, &drugName, &drugDescription, &componentName, &indicationName, &medstoreName, &price); err != nil {
+		if err := rows.Scan(&drugId, &drugName, &drugDescription, &needsReceipt, &componentName, &indicationName, &medstoreName, &price); err != nil {
 			return nil, err
 		}
 
@@ -91,12 +99,13 @@ func GetDrugs(name string, needsReceipt bool, minAgeStr string, components []str
 			components = append(components, componentName)
 			indications = append(indications, indicationName)
 			drugs[drugName] = DrugDesc{
-				Id:          drugId,
-				Name:        drugName,
-				Description: drugDescription,
-				Prices:      prices,
-				Components:  components,
-				Indications: indications,
+				Id:           drugId,
+				Name:         drugName,
+				Description:  drugDescription,
+				Prices:       prices,
+				Components:   components,
+				NeedsReceipt: needsReceipt,
+				Indications:  indications,
 			}
 		} else {
 			var updateComponents bool = true

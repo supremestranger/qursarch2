@@ -34,9 +34,7 @@ function App() {
         }
   
         if (filters.indications.length > 0) {
-          filters.indications.forEach((indication) =>
-            queryParams.append("indications", indication)
-          );
+          queryParams.append("indications", filters.indications.join(","));
         }
   
         console.log(queryParams.toString())  // Check the generated query parameters
@@ -191,33 +189,35 @@ function App() {
           ) : drugs != null && drugs.length > 0 ? (
             <ul className="space-y-4">
               {drugs.map((drug) => (
-                <li
-                  key={drug.Id}
-                  className="bg-white rounded-lg shadow-md p-4 border border-gray-300 hover:shadow-lg transition-shadow flex justify-between items-start"
-                >
-                  <div className="flex-1">
-                    <h2 className="text-xl font-semibold">{drug.Name}</h2>
-                    <p className="text-gray-600 mt-2">{drug.Description}</p>
-                  </div>
-                  <div className="w-1/3 pl-4">
-                    <h3 className="text-lg font-semibold">Prices:</h3>
-                    <ul className="mt-2">
-                      {drug.Prices
-                        .sort((a, b) => a.Price - b.Price) // Sort prices in ascending order
-                        .slice(0, 3) // Display top 3 prices
-                        .map((price, index) => (
-                          <li
-                            key={index}
-                            className="text-gray-800 text-sm flex justify-between border-b border-gray-200 pb-1 mb-1"
-                          >
-                            <span>{price.MedstoreName}</span>
-                            <span className="font-semibold text-green-500">${price.Price}</span>
-                          </li>
-                        ))}
-                    </ul>
-                  </div>
-                </li>
-              ))}
+              <li
+                key={drug.Id}
+                className="bg-white rounded-lg shadow-md p-4 border border-gray-300 hover:shadow-lg transition-shadow flex justify-between items-start"
+              >
+                <div>
+                  <h2 className="text-xl font-semibold">{drug.Name}</h2>
+                  <p className="text-gray-600 mt-2">{drug.Description}</p>
+                  <p className={`mt-2 font-medium ${drug.NeedsReceipt ? "text-red-500" : "text-green-500"}`}>
+                    {drug.NeedsReceipt ? "Требует рецепта" : "Не требует рецепта"}
+                  </p>
+                </div>
+                <div className="text-right pr-4">
+                <h3 className="text-lg font-semibold">Prices:</h3>
+                <ul className="mt-2">
+                  {drug.Prices?.sort((a, b) => a.Price - b.Price)
+                    .slice(0, 3)
+                    .map((price, index) => (
+                      <li
+                        key={index}
+                        className="text-gray-800 text-sm flex justify-between border-b border-gray-200 pb-1 mb-1"
+                      >
+                        <span>{price.MedstoreName}</span>
+                        <span className="font-semibold text-green-500">${price.Price}</span>
+                      </li>
+                    ))}
+                </ul>
+              </div>
+              </li>
+            ))}
             </ul>
           ) : (
             <p className="text-center text-gray-500">No drugs found.</p>

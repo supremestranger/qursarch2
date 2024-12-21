@@ -40,9 +40,9 @@ CREATE TABLE Indications (
 
 -- Создание промежуточной таблицы для связи "Многие ко многим" между лекарствами и показаниями
 CREATE TABLE DrugIndications (
+    ID SERIAL NOT NULL PRIMARY KEY, 
     DrugId SERIAL NOT NULL references Drugs(ID),
-    IndicationId SERIAL NOT NULL references Indications(ID),
-    PRIMARY KEY (DrugId, IndicationId)
+    IndicationId SERIAL NOT NULL references Indications(ID)
 );
 
 INSERT INTO Medstores (Address, Name) VALUES 
