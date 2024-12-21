@@ -24,7 +24,9 @@ func Log() {
 }
 
 func InitRouting() {
-	model.RegisterAccountModels()
+	model.RegisterDrugModels()
+	model.RegisterComponentModels()
+	model.RegisterIndicationModels()
 }
 
 func InitDb() {
