@@ -11,6 +11,25 @@ const DRUG_ROOT = "/drugs"
 
 func RegisterDrugModels() {
 	utils.RegisterOnGet(DRUG_ROOT, OnDrugsGet)
+	utils.RegisterOnGet(DRUG_ROOT+"/{id}", OnDrugGet)
+}
+
+func OnDrugGet(rw http.ResponseWriter, req *http.Request) {
+	utils.EnableCors(rw)
+	id := req.PathValue("id")
+	fullDrugInfo, err := drugs.GetDrug(id)
+	if err != nil {
+		http.Error(rw, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	res, err := json.Marshal(fullDrugInfo)
+	if err != nil {
+		http.Error(rw, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	rw.Write(res)
 }
 
 func OnDrugsGet(rw http.ResponseWriter, req *http.Request) {
